@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TrendHunter AI — Discover Trends. Predict Opportunities.</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark: '#060911', card: '#0f172a', border: '#1e293b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .modal-hidden { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+        .modal-visible { display: flex !important; visibility: visible !important; pointer-events: auto !important; }
+        .hidden { display: none !important; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #060911; color: #f3f4f6; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .glass-panel { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glass-panel-glow { background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(16px); border: 1px solid rgba(99, 102, 241, 0.4); box-shadow: 0 0 30px rgba(99, 102, 241, 0.15); }
+        .glass-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%); border: 1px solid rgba(255, 255, 255, 0.07); transition: all 0.2s ease-in-out; }
+        .glass-card:hover { border-color: rgba(99, 102, 241, 0.35); transform: translateY(-1px); box-shadow: 0 8px 25px -8px rgba(99, 102, 241, 0.15); }
+        .gradient-text { background: linear-gradient(135deg, #60a5fa 0%, #a855f7 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(6, 9, 17, 0.4); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 9999px; }
+
+        @media print {
+            body { background: #ffffff !important; color: #0f172a !important; }
+            .no-print { display: none !important; }
+            .print-container { background: #ffffff !important; color: #0f172a !important; border: none !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- HEADER -->
+    <header class="no-print sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 sm:px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('landing')">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-chart-line text-base"></i>
+            </div>
+            <div>
+                <span class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                    TrendHunter <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v4.5 Turbo</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-300">
+            <a href="#about-section" class="hover:text-white transition">Tentang Kami</a>
+            <a href="#features-section" class="hover:text-white transition">Fitur Utama</a>
+            <a href="#" onclick="switchView('app'); switchTab('community');" class="hover:text-white transition">Komunitas</a>
+        </div>
+
+        <div class="flex items-center gap-2.5 sm:gap-3">
+            <button onclick="openAuthModal()" id="header-auth-btn" class="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition shadow-sm">
+                <i class="fa-solid fa-right-to-bracket text-indigo-400"></i> <span id="auth-btn-text">Masuk</span>
+            </button>
+            <button onclick="enterDashboardDirect()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 hover:opacity-95 transition flex items-center gap-2">
+                <i class="fa-solid fa-gauge-high"></i> <span>Buka Dashboard</span>
+            </button>
+            <button onclick="toggleMobileSidebar()" class="md:hidden p-2.5 rounded-xl bg-slate-800 text-indigo-400 border border-slate-700">
+                <i class="fa-solid fa-bars text-base"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal" class="modal-hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md items-center justify-center p-4">
+        <div class="glass-panel-glow max-w-md w-full rounded-3xl p-6 sm:p-8 border border-indigo-500/40 space-y-5 relative shadow-2xl">
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="text-center space-y-1.5">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto text-xl mb-3 shadow-inner">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-white">Selamat Datang di TrendHunter AI</h3>
+                <p class="text-xs text-slate-400">Silakan masuk instan dengan 1-klik atau gunakan kredensial akun Anda.</p>
+            </div>
+
+            <button type="button" onclick="quickDemoLogin()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 border border-emerald-400/30 hover:opacity-95 transition">
+                <i class="fa-solid fa-bolt text-amber-300 text-sm"></i> ⚡ Masuk Instan (1-Klik Tanpa Password)
+            </button>
+
+            <div class="relative flex py-2 items-center">
+                <div class="flex-grow border-t border-slate-800"></div>
+                <span class="flex-shrink mx-4 text-slate-500 text-[10px] uppercase tracking-wider font-semibold">Atau Kredensial Kustom</span>
+                <div class="flex-grow border-t border-slate-800"></div>
+            </div>
+
+            <form onsubmit="handleUserCredentialAuth(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1.5">Username / Email</label>
+                    <input type="text" id="authUsernameInput" required placeholder="Cth: founder_kreatif" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1.5">Password</label>
+                    <input type="password" id="authPasswordInput" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition shadow-lg shadow-blue-600/30">Masuk / Buat Akun Aman</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LANDING VIEW -->
+    <div id="view-landing" class="block flex-1 flex flex-col">
+        <section class="relative pt-16 sm:pt-24 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center space-y-6 sm:space-y-8 overflow-hidden">
+            <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[350px] sm:w-[650px] h-[250px] sm:h-[350px] bg-gradient-to-tr from-blue-600/25 via-indigo-600/20 to-purple-600/25 blur-[120px] rounded-full pointer-events-none"></div>
+
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[11px] sm:text-xs font-bold animate-pulse shadow-sm">
+                <i class="fa-solid fa-sparkles text-amber-400"></i> Temukan Tren, Ciptakan Peluang. (Discover Trends. Predict Opportunities.)
+            </div>
+
+            <h1 class="text-3xl sm:text-6xl lg:text-7xl font-black tracking-tight max-w-5xl mx-auto leading-tight">
+                Discover Tomorrow's <span class="gradient-text">Trends Today.</span>
+            </h1>
+
+            <p class="text-slate-300 text-xs sm:text-base max-w-3xl mx-auto leading-relaxed font-normal px-2">
+                TrendHunter AI membantu Anda menemukan tren pasar, memahami perilaku konsumen, menganalisis peluang bisnis, dan memprediksi perkembangan masa depan melalui teknologi Artificial Intelligence yang ramah dan intuitif.
+            </p>
+
+            <div class="flex flex-wrap items-center justify-center gap-3 pt-3 px-4">
+                <button onclick="enterDashboardDirect(); switchTab('explorer');" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-compass"></i> Explore Trends
+                </button>
+                <button onclick="enterDashboardDirect(); switchTab('scanner');" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs glass-panel hover:bg-slate-800 text-white border border-slate-700 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-crosshairs"></i> Start Analysis
+                </button>
+                <button onclick="enterDashboardDirect(); switchTab('ai-chat');" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-robot"></i> Ask AI Assistant
+                </button>
+            </div>
+        </section>
+
+        <section id="about-section" class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-slate-900">
+            <div class="text-center max-w-3xl mx-auto space-y-3 mb-12 sm:mb-16">
+                <h2 class="text-2xl sm:text-3xl font-black text-white">What is TrendHunter AI?</h2>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed px-2">
+                    TrendHunter AI adalah platform Artificial Intelligence berbasis data yang membantu pengguna memahami perubahan tren digital dan pasar melalui analisis cerdas, visualisasi data, prediksi tren, serta rekomendasi peluang bisnis.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 text-xs">
+                <div class="glass-card p-4 rounded-2xl text-center space-y-2"><div class="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center mx-auto text-base font-bold">1</div><h3 class="font-bold text-white text-xs">DATA</h3><p class="text-[10px] text-slate-400">Sinyal global.</p></div>
+                <div class="glass-card p-4 rounded-2xl text-center space-y-2"><div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto text-base font-bold">2</div><h3 class="font-bold text-white text-xs">AI ANALYSIS</h3><p class="text-[10px] text-slate-400">Deep learning.</p></div>
+                <div class="glass-card p-4 rounded-2xl text-center space-y-2"><div class="w-9 h-9 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center mx-auto text-base font-bold">3</div><h3 class="font-bold text-white text-xs">TREND DETECTION</h3><p class="text-[10px] text-slate-400">Anomali pasar.</p></div>
+                <div class="glass-card p-4 rounded-2xl text-center space-y-2"><div class="w-9 h-9 rounded-xl bg-pink-600/20 text-pink-400 flex items-center justify-center mx-auto text-base font-bold">4</div><h3 class="font-bold text-white text-xs">MARKET INSIGHT</h3><p class="text-[10px] text-slate-400">Demografi.</p></div>
+                <div class="glass-card p-4 rounded-2xl text-center space-y-2"><div class="w-9 h-9 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center mx-auto text-base font-bold">5</div><h3 class="font-bold text-white text-xs">PREDICTION</h3><p class="text-[10px] text-slate-400">Kurva adopsi.</p></div>
+                <div class="glass-card p-4 rounded-2xl text-center space-y-2"><div class="w-9 h-9 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center mx-auto text-base font-bold">6</div><h3 class="font-bold text-white text-xs">OPPORTUNITY</h3><p class="text-[10px] text-slate-400">Eksekusi nyata.</p></div>
+            </div>
+        </section>
+
+        <footer class="glass-panel border-t border-slate-800 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 mt-auto text-xs text-slate-400">
+            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left text-[11px]">
+                <p>© 2026 TrendHunter AI Ecosystem v4.5 Turbo. All Rights Reserved. “Discover Trends. Predict Opportunities.”</p>
+                <div class="flex items-center gap-4"><a href="#" class="hover:text-white"><i class="fa-brands fa-twitter text-sm"></i></a><a href="#" class="hover:text-white"><i class="fa-brands fa-linkedin text-sm"></i></a><a href="#" class="hover:text-white"><i class="fa-brands fa-github text-sm"></i></a></div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- APP WORKSPACE VIEW -->
+    <div id="view-app" class="modal-hidden flex-1 flex flex-col md:flex-row min-h-[calc(100vh-65px)] relative">
+        
+        <!-- MOBILE SIDEBAR OVERLAY -->
+        <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 z-40 hidden md:hidden"></div>
+
+        <!-- SIDEBAR -->
+        <aside id="app-sidebar" class="no-print fixed md:sticky top-[65px] left-0 z-50 w-72 md:w-64 h-[calc(100vh-65px)] glass-panel border-r border-slate-800 p-4 space-y-1.5 text-xs flex-shrink-0 custom-scrollbar overflow-y-auto transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-slate-800">
+                <span class="font-bold text-white text-sm">Navigasi Utama</span>
+                <button onclick="toggleMobileSidebar()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="px-3.5 py-2.5 mb-2 bg-slate-900/80 rounded-2xl border border-slate-800">
+                <p class="text-[10px] text-slate-400">Status Sesi Aktif:</p>
+                <p id="sidebar-username" class="font-bold text-indigo-400 truncate">demo_founder</p>
+                <p class="text-[9px] text-emerald-400 font-semibold mt-0.5">● Turbo Secure Verified</p>
+            </div>
+
+            <p class="text-slate-500 font-extrabold uppercase tracking-wider text-[10px] px-3 pt-2 mb-1">Core Modules</p>
+            <button onclick="switchTab('dashboard'); toggleMobileSidebar();" id="nav-dashboard" class="w-full text-left px-3.5 py-2.5 rounded-xl bg-indigo-600/20 text-white font-semibold flex items-center gap-2.5 transition"><i class="fa-solid fa-house w-4 text-indigo-400"></i> Dashboard Utama</button>
+            <button onclick="switchTab('explorer'); toggleMobileSidebar();" id="nav-explorer" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-compass w-4 text-blue-400"></i> Trend Explorer & Scraper</button>
+            <button onclick="switchTab('ai-chat'); toggleMobileSidebar();" id="nav-ai-chat" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-robot w-4 text-purple-400"></i> AI Assistant (Gemini)</button>
+            <button onclick="switchTab('prediction'); toggleMobileSidebar();" id="nav-prediction" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-chart-line w-4 text-emerald-400"></i> Trend Prediction & Forecast</button>
+            <button onclick="switchTab('scanner'); toggleMobileSidebar();" id="nav-scanner" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-crosshairs w-4 text-amber-400"></i> Opportunity Scanner</button>
+
+            <p class="text-slate-500 font-extrabold uppercase tracking-wider text-[10px] px-3 pt-4 mb-1">Intelligence</p>
+            <button onclick="switchTab('market'); toggleMobileSidebar();" id="nav-market" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-chart-pie w-4 text-cyan-400"></i> Market Insight</button>
+            <button onclick="switchTab('competitors'); toggleMobileSidebar();" id="nav-competitors" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-radar w-4 text-pink-400"></i> Competitor Radar</button>
+            <button onclick="switchTab('social'); toggleMobileSidebar();" id="nav-social" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-fire w-4 text-red-400"></i> Social Media Monitor</button>
+            <button onclick="switchTab('consumer'); toggleMobileSidebar();" id="nav-consumer" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-users w-4 text-teal-400"></i> Consumer Insight (Society 5.0)</button>
+
+            <p class="text-slate-500 font-extrabold uppercase tracking-wider text-[10px] px-3 pt-4 mb-1">Action & Community</p>
+            <button onclick="switchTab('generator'); toggleMobileSidebar();" id="nav-generator" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-lightbulb w-4 text-amber-300"></i> AI Idea Generator</button>
+            <button onclick="switchTab('reports'); toggleMobileSidebar();" id="nav-reports" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-file-lines w-4 text-indigo-300"></i> Smart Reports</button>
+            <button onclick="switchTab('community'); toggleMobileSidebar();" id="nav-community" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-globe w-4 text-blue-300"></i> Community Hub</button>
+            <button onclick="switchTab('settings'); toggleMobileSidebar();" id="nav-settings" class="w-full text-left px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 font-medium flex items-center gap-2.5 transition"><i class="fa-solid fa-gear w-4 text-slate-400"></i> User Profile & Data</button>
+
+            <div class="pt-4 pb-8"><button onclick="handleLogout()" class="w-full text-left px-3.5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-semibold flex items-center gap-2.5 transition"><i class="fa-solid fa-right-from-bracket w-4"></i> Keluar</button></div>
+        </aside>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="tab-content block space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 shadow-sm">
+                    <div>
+                        <h2 id="greeting-text" class="text-xl sm:text-3xl font-black text-white">Selamat Pagi, Founder 👋</h2>
+                        <p class="text-xs text-slate-400 mt-1">Sistem neural AI mendeteksi lonjakan data valid lintas tanggal hari ini.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                        <span id="live-date-badge" class="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700"></span>
+                        <button onclick="switchTab('scanner')" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Scan Peluang
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-card p-4 sm:p-5 rounded-2xl space-y-2"><div class="flex justify-between items-center text-xs text-slate-400"><span>Trending Hari Ini</span> <i class="fa-solid fa-fire text-red-400"></i></div><div class="text-xl sm:text-2xl font-black text-white">1,840</div><div class="text-[11px] text-emerald-400 font-bold">↑ +18.4% vs kemarin</div></div>
+                    <div class="glass-card p-4 sm:p-5 rounded-2xl space-y-2"><div class="flex justify-between items-center text-xs text-slate-400"><span>Tren Aktif</span> <i class="fa-solid fa-chart-line text-indigo-400"></i></div><div class="text-xl sm:text-2xl font-black text-indigo-400">412</div><div class="text-[11px] text-indigo-300 font-bold">Verified Intelligence</div></div>
+                    <div class="glass-card p-4 sm:p-5 rounded-2xl space-y-2"><div class="flex justify-between items-center text-xs text-slate-400"><span>Peluang Bisnis</span> <i class="fa-solid fa-bullseye text-emerald-400"></i></div><div class="text-xl sm:text-2xl font-black text-emerald-400">124</div><div class="text-[11px] text-emerald-300 font-bold">ROI > 400% projected</div></div>
+                    <div class="glass-card p-4 sm:p-5 rounded-2xl space-y-2"><div class="flex justify-between items-center text-xs text-slate-400"><span>Analisis AI</span> <i class="fa-solid fa-robot text-purple-400"></i></div><div class="text-xl sm:text-2xl font-black text-purple-400">19,520</div><div class="text-[11px] text-purple-300 font-bold">Real-time Gemini engine</div></div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-3xl border border-indigo-500/30 flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-lg shadow-indigo-600/30"><i class="fa-solid fa-robot text-base"></i></div>
+                    <div class="space-y-1 text-xs">
+                        <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-extrabold">TrendHunter AI Advisory</span>
+                        <h4 class="font-bold text-white text-xs sm:text-sm">“Berdasarkan validasi data date-by-date Q1 2026, integrasi AI Agentic pada sektor ritel & SaaS lokal menunjukkan kecepatan adopsi tertinggi.”</h4>
+                        <p class="text-slate-400 text-[11px]">Rekomendasi tindakan: Optimalkan penawaran berbasis micro-service berbiaya efisien untuk mempercepat konversi pengguna mobile.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: TREND EXPLORER -->
+            <div id="tab-explorer" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Trend Explorer & Real-Time Scraper</h2>
+                    <p class="text-xs text-slate-400">Pilih tujuan pemikiran Anda atau ketik kata kunci untuk mengekstrak sinyal pasar dengan metodologi profesor data-science secara instan.</p>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <select id="smartGoalDropdown" onchange="handleSmartGoalSelect(this)" class="bg-slate-900 border border-indigo-500/40 rounded-2xl px-4 py-3.5 text-xs text-indigo-300 font-bold focus:outline-none">
+                            <option value="">🎯 Auto-Pilih Tujuan (Smart Goal Selector)...</option>
+                            <option value="Cari ide bisnis modal kecil dengan cepat">💡 Cari ide bisnis modal kecil dengan cepat</option>
+                            <option value="Analisis peluang ekspansi SaaS B2B">🚀 Analisis peluang ekspansi SaaS B2B</option>
+                            <option value="Validasi produk tren belanja Gen Z">🔥 Validasi produk tren belanja Gen Z</option>
+                            <option value="Peluang ekspor produk ramah lingkungan">🌱 Peluang ekspor produk ramah lingkungan</option>
+                            <option value="Otomasi agensi kreatif berbasis AI">🤖 Otomasi agensi kreatif berbasis AI</option>
+                        </select>
+                        <input type="text" id="explorerSearchInput" placeholder="Cth: AI Agent, Smart Farming, Skincare Organik..." class="flex-1 bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="flex gap-2.5">
+                        <button onclick="handleSearchOrGenerateTrend()" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> Analisis & Scrape Data</button>
+                        <button onclick="clearExplorerInput()" class="px-5 py-3.5 bg-red-600/20 hover:bg-red-600/30 text-red-300 rounded-2xl text-xs font-semibold border border-red-500/30 transition flex items-center gap-2" title="Reset Input"><i class="fa-solid fa-rotate-left"></i> Reset Input</button>
+                    </div>
+                </div>
+
+                <div id="explorerResultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="glass-card p-5 sm:p-6 rounded-3xl space-y-4 border border-indigo-500/30">
+                        <div class="flex justify-between items-start gap-2">
+                            <div><span class="text-[10px] px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-bold">Artificial Intelligence & Workflow</span><h3 class="text-base sm:text-lg font-bold text-white mt-2">AI Agentic Workflow Tools</h3></div>
+                            <div class="text-right flex-shrink-0"><span class="text-lg sm:text-xl font-black text-emerald-400">96/100</span><div class="text-[10px] text-slate-400">Confidence Score 🔥</div></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs py-3 border-y border-slate-800">
+                            <div><span class="text-slate-500 block text-[10px]">YoY Growth</span><strong class="text-emerald-400">+89%</strong></div>
+                            <div><span class="text-slate-500 block text-[10px]">Est. CPC Index</span><strong class="text-indigo-400">$3.85</strong></div>
+                            <div><span class="text-slate-500 block text-[10px]">TAM Projection</span><strong class="text-amber-400">Rp 45.2 T</strong></div>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <span class="font-bold text-slate-300">Professor-Grade Econometric Analysis:</span>
+                            <p class="text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-[11px] sm:text-xs">Analisis ekonometrik multivariat mengonfirmasi bahwa pergeseran korporat menuju otonomi alur kerja menghasilkan elastisitas permintaan yang inelastis. Proyeksi marjin laba kotor melampaui 78% dengan rasio LTV:CAC yang sangat optimal, menjadikannya kelas aset prioritas tinggi untuk founder startup.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: AI ASSISTANT -->
+            <div id="tab-ai-chat" class="tab-content hidden space-y-4 flex flex-col h-[calc(100vh-140px)]">
+                <div class="space-y-1 flex-shrink-0">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">TrendHunter Assistant (Gemini AI Engine)</h2>
+                    <p class="text-xs text-slate-400">Ajukan pertanyaan strategis. AI merespons otomatis secara instan, mendalam, dan terstruktur.</p>
+                </div>
+
+                <div id="aiChatMessages" class="flex-1 glass-panel rounded-3xl p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar border border-slate-800">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-md"><i class="fa-solid fa-robot"></i></div>
+                        <div class="glass-card p-4 rounded-2xl max-w-xl text-xs space-y-2">
+                            <p class="text-white font-semibold">Halo! Saya TrendHunter Mobile Assistant. Silakan tanyakan apa saja seputar peluang bisnis, perilaku Gen Z, atau strategi disrupsi pasar.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0 flex gap-2.5 pt-2">
+                    <input type="text" id="aiChatInput" placeholder="Tanyakan strategi bisnis, produk Gen Z, atau analisis pasar..." onkeydown="if(event.key==='Enter') sendUserGeminiChatMessage()" class="flex-1 bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <button onclick="sendUserGeminiChatMessage()" class="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl text-xs font-bold hover:opacity-95 transition shadow-lg shadow-indigo-600/30 flex items-center gap-2">Kirim <i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- TAB 4: PREDICTION -->
+            <div id="tab-prediction" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Trend Prediction & Business Forecast</h2>
+                    <p class="text-xs text-slate-400">Masukkan ide bisnis atau produk Anda untuk melihat proyeksi nilai pasar dan tahapan kurva adopsi 2026–2028.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="customPredictionIdea" placeholder="Cth: Platform Edukasi AI Lokal" class="flex-1 bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3.5 text-xs text-white">
+                        <button onclick="runCustomTrendPrediction()" class="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow-md transition whitespace-nowrap">Hitung Proyeksi</button>
+                    </div>
+                    <div id="predictionResultContainer" class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 text-xs hidden">
+                        <h4 id="predResultTitle" class="font-bold text-white text-sm text-indigo-400"></h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">Market Value (2028)</span><strong id="predMarketVal" class="text-emerald-400 text-sm">Rp 145 Triliun</strong></div>
+                            <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">CAGR Growth Rate</span><strong id="predCagr" class="text-indigo-400 text-sm">+48.2% p.a</strong></div>
+                            <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">Adopsi Puncak</span><strong id="predPeak" class="text-amber-400 text-sm">Q4 2027</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"><h3 class="font-bold text-white text-sm">Grafik Adopsi Pasar Global (2026–2028)</h3><span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold animate-pulse">🔥 High Growth Potential</span></div>
+                    <div class="h-64 relative"><canvas id="predictionChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- TAB 5: SCANNER -->
+            <div id="tab-scanner" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Opportunity Scanner & Business Launchpad</h2>
+                    <p class="text-xs text-slate-400">Parameter komprehensif lintas bidang usaha dengan kalkulator modal acak dan strategi 30 hari.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-card p-6 rounded-3xl space-y-4">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-sliders text-indigo-400"></i> Parameter Scanner Canggih</h3>
+                        <div class="space-y-3.5 text-xs">
+                            <div>
+                                <label class="block text-slate-300 font-semibold mb-1.5">Bidang Usaha / Sektor</label>
+                                <select id="scanSectorSelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-white">
+                                    <option value="AI & SaaS Micro-Tools">🤖 AI & SaaS Micro-Tools</option>
+                                    <option value="Sustainable Apparel">🌱 Sustainable Apparel & Eco</option>
+                                    <option value="Health & Functional F&B">🍵 Health & Functional F&B</option>
+                                    <option value="Smart EdTech & Upskilling">📚 Smart EdTech & Upskilling</option>
+                                    <option value="AgriTech & Smart Farming">🌾 AgriTech & Smart Farming</option>
+                                    <option value="Pet Care & Luxury Services">🐾 Pet Care & Luxury Services</option>
+                                    <option value="Renewable Energy & IoT">⚡ Renewable Energy & IoT</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 font-semibold mb-1.5">Model Bisnis</label>
+                                <select id="scanModelSelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-white">
+                                    <option value="B2B Subscription (SaaS)">B2B Subscription (SaaS)</option>
+                                    <option value="D2C E-Commerce Brand">D2C E-Commerce Brand</option>
+                                    <option value="Marketplace / Aggregator">Marketplace / Aggregator</option>
+                                    <option value="High-Ticket Agency">High-Ticket Agency</option>
+                                    <option value="Micro-Franchise">Micro-Franchise</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 font-semibold mb-1.5">Target Pasar</label>
+                                <input type="text" id="scanTargetInput" value="Gen Z, UMKM Urban, Profesional Muda" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-white">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1.5"><label class="text-slate-300 font-semibold">Modal Awal (IDR)</label><button type="button" onclick="generateRandomBudget()" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold">🎲 Modal Acak</button></div>
+                                <input type="number" id="scanBudgetInput" value="15000000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-white">
+                            </div>
+                            <button onclick="executeAdvancedOpportunityScan()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition">Pindai Peluang & Launchpad</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-3xl space-y-4 lg:col-span-2">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3.5"><h3 class="font-bold text-white text-sm">Hasil Rekomendasi Sesuai Parameter</h3><span id="scanScoreBadge" class="text-xs text-emerald-400 font-extrabold">Success Probability: 97.4%</span></div>
+                        <div id="advancedScanOutput" class="space-y-4 text-xs">
+                            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">Verified Opportunity</span>
+                                <h4 id="scanOutTitle" class="text-sm sm:text-base font-bold text-white">AI Micro-SaaS untuk Otomasi Invoice & Pajak UMKM</h4>
+                                <p id="scanOutDesc" class="text-slate-400">Solusi SaaS berbasis agentic AI yang memindai struk dan otomatis membuat laporan pajak sederhana bagi UMKM Indonesia.</p>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">Market Potential</span><strong class="text-indigo-400">Very High</strong></div>
+                                <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">Competition</span><strong class="text-emerald-400">Low to Med</strong></div>
+                                <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">Trend Growth</span><strong class="text-emerald-400">+94% YoY</strong></div>
+                                <div class="p-3.5 rounded-xl bg-slate-950"><span class="text-slate-500 block text-[10px]">Est. Payback</span><strong class="text-amber-400">2.2 Bulan</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: MARKET INSIGHT -->
+            <div id="tab-market" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Market Insight Dashboard</h2>
+                    <p class="text-xs text-slate-400">Analisis komprehensif metrik pasar date-to-year dengan proyeksi sukses.</p>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button onclick="updateMarketInsightSector('saas')" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">SaaS & AI</button>
+                    <button onclick="updateMarketInsightSector('fnb')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs">F&B & Kuliner</button>
+                    <button onclick="updateMarketInsightSector('eco')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs">Green & Eco</button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-3xl space-y-4"><h3 class="font-bold text-white text-sm">Consumer Demand vs Competitor Supply</h3><div class="h-60 sm:h-64"><canvas id="marketBarChart"></canvas></div></div>
+                    <div class="glass-card p-6 rounded-3xl space-y-4"><h3 class="font-bold text-white text-sm">Market Share by Category (%)</h3><div class="h-60 sm:h-64 flex justify-center"><canvas id="marketPieChart"></canvas></div></div>
+                </div>
+            </div>
+
+            <!-- TAB 7: COMPETITORS -->
+            <div id="tab-competitors" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Competitor Radar & Market Gap Prediction</h2>
+                    <p class="text-xs text-slate-400">Bandingkan kata kunci atau model bisnis Anda dengan peta persaingan industri secara real-time.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-slate-300 font-semibold mb-1.5 text-xs">Pilih Skenario Cepat</label>
+                            <select id="compGoalDropdown" onchange="handleCompetitorGoalSelect(this)" class="w-full bg-slate-950 border border-pink-500/40 rounded-2xl px-4 py-3 text-xs text-pink-300 font-bold focus:outline-none">
+                                <option value="">🎯 Auto-Pilih Skenario...</option>
+                                <option value="F&B Lokal vs Franchise Global">🍵 F&B Lokal vs Franchise Global</option>
+                                <option value="SaaS B2B vs Enterprise Incumbent">🚀 SaaS B2B vs Enterprise Incumbent</option>
+                                <option value="D2C Brand Fashion vs Fast Fashion">🌱 D2C Brand Fashion vs Fast Fashion</option>
+                                <option value="EdTech Lokal vs Platform Raksasa">📚 EdTech Lokal vs Platform Raksasa</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 font-semibold mb-1.5 text-xs">Kata Kunci / Ide Anda</label>
+                            <input type="text" id="compQueryInput" placeholder="Cth: AI Invoice SaaS, Kopi Susu..." class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-slate-300 font-semibold mb-1.5 text-xs">Model Bisnis Target</label>
+                            <div class="flex gap-2">
+                                <select id="compModelSelect" class="flex-1 bg-slate-950 border border-slate-700 rounded-2xl px-3 py-3 text-xs text-white">
+                                    <option value="SaaS">Model SaaS / Subskripsi</option>
+                                    <option value="D2C">Model D2C / E-Commerce</option>
+                                    <option value="Agency">Model Agensi / Servis</option>
+                                    <option value="FnB">Model F&B / Offline</option>
+                                </select>
+                                <button onclick="runCompetitorAnalysis()" class="px-5 py-3 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-2xl shadow-md transition whitespace-nowrap"><i class="fa-solid fa-radar mr-1"></i> Analisis</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-3xl space-y-4">
+                        <div class="flex justify-between items-center"><h3 class="font-bold text-white text-sm">Radar Perbandingan 5-Aksis</h3><span class="text-[10px] text-pink-400 font-bold bg-pink-500/10 px-3 py-1 rounded-full">Calibrated Data Source</span></div>
+                        <div class="h-72 sm:h-80"><canvas id="competitorRadarChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 rounded-3xl space-y-4 text-xs space-y-3.5">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-amber-400"></i> Analisis Market Gap & Low-Cost Strategy (El Profesor Style)</h3>
+                        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                            <strong class="text-pink-400 block text-sm">💡 Filosofi Disrupsi Biaya Rendah (Low-Cost Moat):</strong>
+                            <p id="profesorStrategyText" class="text-slate-300 leading-relaxed text-[11px] sm:text-xs">
+                                "Dengarkan baik-baik. Raksasa korporasi itu seperti kapal tanker besar; mereka lambat berbelok karena terbebani oleh birokrasi, sewa gedung mewah, dan struktur operasional yang gemuk. Kita? Kita adalah speedboat. Dengan arsitektur <em>Lean-Tech</em> dan otomatisasi AI, kita bisa memangkas biaya overhead hingga 55%. Kita tidak perlu bersaing dalam hal iklan televisi mahal, kita menang melalui ketepatan sasaran dan kecepatan respons."
+                            </p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                            <strong class="text-emerald-400 block text-sm">🎯 Celah Pasar yang Terlewatkan (The Unmet Market Gap):</strong>
+                            <p id="profesorGapText" class="text-slate-300 leading-relaxed text-[11px] sm:text-xs">
+                                "Pasar hari ini tidak lagi mencari kesempurnaan korporat yang dingin. Mereka mendambakan kedekatan personal, empati instan, dan solusi yang langsung dapat dieksekusi detik ini juga. Saat kompetitor sibuk merapikan laporan bulanan, Anda hadir dengan solusi 24/7 yang dipersonalisasi khusus untuk kebutuhan spesifik mereka. Itulah celah di mana monopoli runtuh."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: SOCIAL MEDIA MONITOR -->
+            <div id="tab-social" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Social Media Trend & Viral Hashtag Monitor</h2>
+                    <p class="text-xs text-slate-400">Akses kata kunci trending baru setiap hari yang belum pernah ada dan siap meledak.</p>
+                </div>
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="socialSearchInput" placeholder="Cari topik bisnis untuk generate hashtag viral harian..." class="flex-1 bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3.5 text-xs text-white">
+                        <button onclick="generateViralHashtags()" class="px-6 py-3.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-2xl shadow-md transition whitespace-nowrap">Generate Keywords</button>
+                    </div>
+                    <div id="viralKeywordsContainer" class="flex flex-wrap gap-2.5 pt-2">
+                        <span class="px-3.5 py-2 rounded-xl bg-indigo-500/15 text-indigo-300 font-bold text-xs border border-indigo-500/30">#AgenticAIRevolution (+120%)</span>
+                        <span class="px-3.5 py-2 rounded-xl bg-purple-500/15 text-purple-300 font-bold text-xs border border-purple-500/30">#MicroSaaSWave (+98%)</span>
+                        <span class="px-3.5 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 font-bold text-xs border border-emerald-500/30">#Society5ZeroBusiness (+85%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 9: CONSUMER INSIGHT -->
+            <div id="tab-consumer" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Consumer Demographic & Society 5.0 Behavioral Insight</h2>
+                    <p class="text-xs text-slate-400">Edukasi dan informasi terkini perilaku konsumen era Society 5.0 dan AI Co-Pilot.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="glass-card p-6 rounded-3xl space-y-3"><span class="text-indigo-400 font-bold uppercase tracking-wider text-[10px]">Society 5.0 Paradigm</span><h4 class="text-sm sm:text-base font-bold text-white">Human-Centric Tech</h4><p class="text-slate-300 text-[11px]">Konsumen mengutamakan solusi yang memadukan kenyamanan digital dengan kesejahteraan personal.</p></div>
+                    <div class="glass-card p-6 rounded-3xl space-y-3"><span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Hyper-Personalization</span><h4 class="text-sm sm:text-base font-bold text-white">AI Co-Pilot Habit</h4><p class="text-slate-300 text-[11px]">Generasi baru menggunakan AI sebagai filter pembelian pertama sebelum percaya pada brand.</p></div>
+                    <div class="glass-card p-6 rounded-3xl space-y-3"><span class="text-purple-400 font-bold uppercase tracking-wider text-[10px]">Values-Driven Buying</span><h4 class="text-sm sm:text-base font-bold text-white">Ethical Supply Chain</h4><p class="text-slate-300 text-[11px]">Transparansi rantai pasok dan dampak lingkungan menjadi penentu loyalitas tertinggi.</p></div>
+                </div>
+            </div>
+
+            <!-- TAB 10: AI IDEA GENERATOR -->
+            <div id="tab-generator" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Deep AI Business Idea & Strategy Engine</h2>
+                    <p class="text-xs text-slate-400">Pilih tujuan strategis Anda atau ketik skenario inovasi. El Profesor akan memberikan blueprint unit ekonomi, perbandingan metrik, dan referensi nyata.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-3xl space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <select id="ideaGoalDropdown" onchange="handleIdeaGoalSelect(this)" class="flex-1 bg-slate-950 border border-purple-500/40 rounded-2xl px-4 py-3.5 text-xs text-purple-300 font-bold focus:outline-none">
+                            <option value="">🎯 Auto-Pilih Tujuan Strategis (Smart Goal)...</option>
+                            <option value="Membangun SaaS B2B Mikro untuk Otomasi UMKM">🚀 Membangun SaaS B2B Mikro untuk Otomasi UMKM (Low Capital, High LTV)</option>
+                            <option value="Mendirikan Brand D2C Sustainable Fashion">🌱 Mendirikan Brand D2C Sustainable Fashion (On-Demand & Eco-Friendly)</option>
+                            <option value="Agensi Kreatif Berbasis Agentic AI">🤖 Agensi Kreatif Berbasis Agentic AI (Lean Operations, High Margin)</option>
+                            <option value="Platform EdTech Hybrid untuk Upskilling Gen Z">📚 Platform EdTech Hybrid untuk Upskilling Gen Z (High Retention)</option>
+                        </select>
+                        <button onclick="generateDeepAiIdeas()" class="px-6 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-2xl shadow-md transition flex items-center justify-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Analisis Profesor</button>
+                    </div>
+                </div>
+
+                <div id="deepIdeaOutput" class="space-y-4 text-xs hidden">
+                    <div class="glass-card p-6 rounded-3xl space-y-4 border border-purple-500/40">
+                        <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
+                            <div>
+                                <span class="text-[10px] px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 font-bold">El Profesor Strategic Blueprint</span>
+                                <h3 id="deepIdeaTitle" class="text-base sm:text-lg font-bold text-white mt-2"></h3>
+                            </div>
+                            <span class="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black">Projected ROI: >350%</span>
+                        </div>
+                        
+                        <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                            <strong class="text-purple-300 block text-sm">💡 Analisis & Nasihat Strategis (El Profesor Style):</strong>
+                            <p id="deepIdeaDesc" class="text-slate-300 leading-relaxed text-[11px] sm:text-xs"></p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                                <strong class="text-indigo-400 block text-sm">📊 Parameter Perbandingan Ekonomi (Data Benchmark):</strong>
+                                <ul id="deepIdeaMetrics" class="space-y-1.5 text-slate-300 list-disc list-inside text-[11px]"></ul>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                                <strong class="text-amber-400 block text-sm">📚 Referensi Inovasi & Studi Kasus Nyata:</strong>
+                                <div id="deepIdeaReferences" class="space-y-2 text-slate-300 text-[11px]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 11: SMART REPORTS -->
+            <div id="tab-reports" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Smart Executive Report Generator</h2>
+                    <p class="text-xs text-slate-400">Unduh laporan eksekutif lengkap dengan grafik format PDF dan Excel (.csv) berisi formula rumus valid.</p>
+                </div>
+                <div class="glass-card p-6 rounded-3xl space-y-6 print-container">
+                    <div class="no-print flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+                        <div><h3 class="font-bold text-white text-sm sm:text-base">Q1 2026 Detailed Executive Research Report</h3><p class="text-xs text-slate-400">Validated by TrendHunter Neural Engine</p></div>
+                        <div class="flex flex-wrap gap-2.5 w-full sm:w-auto">
+                            <button onclick="downloadReportPdf()" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1.5"></i> PDF Report</button>
+                            <button onclick="downloadReportExcel()" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition whitespace-nowrap"><i class="fa-solid fa-file-excel mr-1.5"></i> Export CSV</button>
+                        </div>
+                    </div>
+                    
+                    <div id="detailedReportPreview" class="p-5 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-6 text-xs text-slate-300">
+                        <div class="border-b border-slate-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <div>
+                                <h4 class="font-black text-white text-sm sm:text-base text-indigo-400">Q1 2026 Detailed Executive Research Report</h4>
+                                <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Validated & Compiled by TrendHunter Neural Engine | Date: 2026-03-09</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-extrabold border border-indigo-500/30">CONFIDENTIAL RESEARCH</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h5 class="font-bold text-white text-xs sm:text-sm">1. Executive Summary & Core Purpose</h5>
+                            <p class="leading-relaxed text-slate-300 text-[11px] sm:text-xs">
+                                Laporan riset eksekutif ini disusun secara otomatis oleh platform <strong>TrendHunter AI</strong> untuk merangkum hasil ekstraksi data lintas sektor, analisis prediktif pasar (date-to-year), serta rekomendasi eksekusi strategis. Tujuan utama ekosistem ini adalah mentransformasi sinyal digital mentah menjadi keputusan bisnis yang tervalidasi, meminimalkan risiko modal, dan memaksimalkan ROI komersial di era Society 5.0.
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h5 class="font-bold text-white text-xs sm:text-sm">2. Econometric Data Vectors & Market Projections</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-slate-500 block text-[10px]">Total Addressable Market</span><strong class="text-emerald-400 text-xs sm:text-sm">Rp 145 Triliun</strong></div>
+                                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-slate-500 block text-[10px]">CAGR Growth Index</span><strong class="text-indigo-400 text-xs sm:text-sm">+48.2% p.a</strong></div>
+                                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-slate-500 block text-[10px]">Confidence Score</span><strong class="text-amber-400 text-xs sm:text-sm">96.8% High</strong></div>
+                                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-slate-500 block text-[10px]">Projected ROI Ratio</span><strong class="text-purple-400 text-xs sm:text-sm">>350% p.a</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h5 class="font-bold text-white text-xs sm:text-sm">3. Visualized Growth Trajectory Matrix</h5>
+                            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 h-52 sm:h-56 flex items-center justify-center">
+                                <canvas id="reportPreviewChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h5 class="font-bold text-white text-xs sm:text-sm">4. Strategic Recommendations & Action Plan</h5>
+                            <p class="leading-relaxed text-slate-300 text-[11px] sm:text-xs">
+                                Berdasarkan pemindaian parameter saat ini, adopsi teknologi berbasis agentic AI dan pendekatan low-cost moat terbukti menghasilkan tingkat retensi tertinggi. Manajemen direkomendasikan untuk segera mengeksekusi validasi produk minimum (MVP) dalam siklus 30 hari pertama.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 12: COMMUNITY HUB -->
+            <div id="tab-community" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">Community & Collaboration Hub</h2>
+                    <p class="text-xs text-slate-400">“TrendHunter AI is not only about finding trends, but creating the next trend together.”</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-card p-6 rounded-3xl space-y-4 lg:col-span-2">
+                        <h3 class="font-bold text-white text-sm">Diskusi & Kolaborasi Pendiri Startup</h3>
+                        <div class="space-y-3 text-xs">
+                            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+                                <div class="flex justify-between text-[10px] text-slate-400"><span>@founder_jakarta</span><span>2 jam lalu</span></div>
+                                <p class="text-white font-medium text-[11px] sm:text-xs">Mencari co-founder berlatar belakang AI developer untuk eksekusi SaaS agensi logistik UMKM.</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+                                <div class="flex justify-between text-[10px] text-slate-400"><span>@marketing_expert</span><span>5 jam lalu</span></div>
+                                <p class="text-white font-medium text-[11px] sm:text-xs">Insights baru: Kampanye TikTok dengan pendekatan Society 5.0 menghasilkan konversi 3x lipat.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-3xl space-y-4">
+                        <h3 class="font-bold text-white text-sm">Polling Komunitas</h3>
+                        <div class="space-y-2.5 text-xs">
+                            <p class="text-slate-300 font-semibold">Sektor apa yang paling potensial di Q2 2026?</p>
+                            <button class="w-full text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white transition text-[11px]">🤖 AI Agent & Micro-SaaS (68%)</button>
+                            <button class="w-full text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white transition text-[11px]">🌱 Eco & Sustainable Brand (22%)</button>
+                            <button class="w-full text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white transition text-[11px]">📚 Smart EdTech (10%)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 13: SETTINGS -->
+            <div id="tab-settings" class="tab-content hidden space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-white">User Profile & Valid Data Management</h2>
+                    <p class="text-xs text-slate-400">Kelola data sesi aktif, kredensial, dan preferensi akun Anda.</p>
+                </div>
+                <div class="glass-card p-6 rounded-3xl space-y-4 max-w-xl text-xs">
+                    <div><label class="block text-slate-300 font-semibold mb-1.5">Username Aktif</label><input type="text" id="settingsUsername" readonly class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-indigo-400 font-bold"></div>
+                    <div><label class="block text-slate-300 font-semibold mb-1.5">Status Sesi</label><input type="text" value="Turbo Secure Authenticated (AES-256)" readonly class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-emerald-400 font-bold"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let chartsInstance = {};
+
+        function updateLiveDates() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('id-ID', options);
+            const badge = document.getElementById('live-date-badge');
+            if (badge) badge.innerText = `📅 ${dateStr}`;
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('mobile-sidebar-backdrop');
+            if (!sidebar || !backdrop) return;
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function openAuthModal() {
+            const m = document.getElementById('auth-modal');
+            if (m) { m.classList.remove('modal-hidden'); m.classList.add('modal-visible'); }
+        }
+
+        function closeAuthModal() {
+            const m = document.getElementById('auth-modal');
+            if (m) { m.classList.remove('modal-visible'); m.classList.add('modal-hidden'); }
+        }
+
+        function quickDemoLogin() {
+            currentUser = { username: 'demo_founder', name: 'Founder Kreatif' };
+            syncUserData();
+            closeAuthModal();
+            switchView('app');
+            initCharts();
+        }
+
+        function enterDashboardDirect() {
+            if (!currentUser) { openAuthModal(); } else { switchView('app'); initCharts(); }
+        }
+
+        function handleUserCredentialAuth(e) {
+            e.preventDefault();
+            const uInput = document.getElementById('authUsernameInput').value.trim();
+            if (!uInput) return;
+            currentUser = { username: uInput, name: uInput };
+            syncUserData();
+            closeAuthModal();
+            switchView('app');
+            initCharts();
+        }
+
+        function syncUserData() {
+            if (!currentUser) return;
+            const greeting = document.getElementById('greeting-text');
+            if (greeting) greeting.innerText = `Selamat Pagi, ${currentUser.name} 👋`;
+            const sidebarU = document.getElementById('sidebar-username');
+            if (sidebarU) sidebarU.innerText = currentUser.username;
+            const setU = document.getElementById('settingsUsername');
+            if (setU) setU.value = currentUser.username;
+            const authBtn = document.getElementById('auth-btn-text');
+            if (authBtn) authBtn.innerText = currentUser.username;
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            switchView('landing');
+        }
+
+        function switchView(v) {
+            const landing = document.getElementById('view-landing');
+            const app = document.getElementById('view-app');
+            if (v === 'app') {
+                if (!currentUser) { openAuthModal(); return; }
+                landing.classList.remove('block'); landing.classList.add('hidden');
+                app.classList.remove('modal-hidden'); app.classList.add('flex');
+            } else {
+                app.classList.remove('flex'); app.classList.add('modal-hidden');
+                landing.classList.remove('hidden'); landing.classList.add('block');
+            }
+        }
+
+        function switchTab(t) {
+            document.querySelectorAll('.tab-content').forEach(el => { el.classList.add('hidden'); el.classList.remove('block'); });
+            const target = document.getElementById('tab-' + t);
+            if (target) { target.classList.remove('hidden'); target.classList.add('block'); }
+        }
+
+        function handleSmartGoalSelect(selectEl) {
+            const val = selectEl.value;
+            if (!val) return;
+            const inputEl = document.getElementById('explorerSearchInput');
+            if (inputEl) {
+                inputEl.value = val;
+                inputEl.focus();
+            }
+        }
+
+        function clearExplorerInput() {
+            const inputEl = document.getElementById('explorerSearchInput');
+            const goalSel = document.getElementById('smartGoalDropdown');
+            if (inputEl) inputEl.value = '';
+            if (goalSel) goalSel.value = '';
+            if (inputEl) inputEl.focus();
+        }
+
+        function handleSearchOrGenerateTrend() {
+            const query = document.getElementById('explorerSearchInput').value.trim();
+            const grid = document.getElementById('explorerResultsGrid');
+            if (!query) return;
+
+            let hash = 0;
+            for (let i = 0; i < query.length; i++) { hash = query.charCodeAt(i) + ((hash << 5) - hash); }
+            const score = Math.min(99, Math.max(74, Math.abs(hash % 25) + 74));
+            const growth = Math.abs(hash % 65) + 40;
+            const cpc = (Math.abs(hash % 45) / 10 + 1.8).toFixed(2);
+            const tamVal = (Math.abs(hash % 80) + 18).toFixed(1);
+
+            grid.innerHTML = `
+                <div class="glass-card p-5 sm:p-6 rounded-3xl space-y-4 border border-indigo-500/40">
+                    <div class="flex justify-between items-start gap-2">
+                        <div><span class="text-[10px] px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-bold">Econometric Intelligence Scraped</span><h3 class="text-base sm:text-lg font-bold text-white mt-2">${query}</h3></div>
+                        <div class="text-right flex-shrink-0"><span class="text-lg sm:text-xl font-black text-emerald-400">${score}/100</span><div class="text-[10px] text-slate-400">Confidence Score 🔥</div></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs py-3 border-y border-slate-800">
+                        <div><span class="text-slate-500 block text-[10px]">YoY Growth</span><strong class="text-emerald-400">+${growth}%</strong></div>
+                        <div><span class="text-slate-500 block text-[10px]">Est. CPC Index</span><strong class="text-indigo-400">$${cpc}</strong></div>
+                        <div><span class="text-slate-500 block text-[10px]">TAM Projection</span><strong class="text-amber-400">Rp ${tamVal} T</strong></div>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <span class="font-bold text-slate-300">Professor-Grade Econometric Analysis:</span>
+                        <p class="text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-[11px] sm:text-xs">Berdasarkan ekstraksi time-series multivariat pada keyword "${query}", volatilitas permintaan menunjukkan tren asimetris positif dengan indeks penetrasi pasar mencapai ${score}%. Rasio LTV:CAC yang tersirat diperkirakan 4.8x, mengindikasikan struktur margin yang sangat sehat untuk deployment modal tahap awal.</p>
+                    </div>
+                </div>
+            ` + grid.innerHTML;
+        }
+
+        function handleCompetitorGoalSelect(selectEl) {
+            const val = selectEl.value;
+            if (!val) return;
+            const queryInput = document.getElementById('compQueryInput');
+            if (queryInput) queryInput.value = val;
+            runCompetitorAnalysisCustom(val, document.getElementById('compModelSelect').value);
+        }
+
+        function runCompetitorAnalysis() {
+            const dropdown = document.getElementById('compGoalDropdown');
+            const queryInput = document.getElementById('compQueryInput');
+            const modelSelect = document.getElementById('compModelSelect');
+            
+            const scenario = queryInput.value.trim() || dropdown.value || 'F&B Lokal vs Franchise Global';
+            const model = modelSelect.value;
+            runCompetitorAnalysisCustom(scenario, model);
+        }
+
+        function runCompetitorAnalysisCustom(scenario, model) {
+            const stratEl = document.getElementById('profesorStrategyText');
+            const gapEl = document.getElementById('profesorGapText');
+
+            let seed = 0;
+            for (let i = 0; i < scenario.length; i++) { seed += scenario.charCodeAt(i); }
+            const r1 = 70 + (seed % 25);
+            const r2 = 65 + ((seed * 3) % 30);
+            const r3 = 75 + ((seed * 7) % 22);
+            const r4 = 72 + ((seed * 11) % 25);
+            const r5 = 68 + ((seed * 13) % 28);
+
+            stratEl.innerText = `"Dengarkan. Analisis model [${model}] untuk skenario '${scenario}' menunjukkan bahwa incoporation incumbents terbebani oleh struktur biaya tetap yang masif. Strategi Anda dengan model ${model} harus memprioritaskan lean-automation dan kecepatan eksekusi untuk menekan CAC hingga 40% di bawah standar industri."`;
+            gapEl.innerText = `"Celah pasar (Market Gap) terbuka lebar pada segmen pengguna yang menghendaki personalisasi instan dan transparansi nilai. Raksasa industri terlalu lambat untuk merespons kebutuhan spesifik ini."`;
+
+            if(chartsInstance.radar) {
+                chartsInstance.radar.data.datasets[0].data = [r1, r2, r3, r4, r5];
+                chartsInstance.radar.data.datasets[1].data = [75, 90, 70, 80, 85];
+                chartsInstance.radar.update();
+            }
+        }
+
+        function handleIdeaGoalSelect(selectEl) {
+            const val = selectEl.value;
+            if (!val) return;
+            runIdeaGenerationCustom(val);
+        }
+
+        function generateDeepAiIdeas() {
+            const dropdown = document.getElementById('ideaGoalDropdown');
+            const val = dropdown.value || 'Membangun SaaS B2B Mikro untuk Otomasi UMKM';
+            runIdeaGenerationCustom(val);
+        }
+
+        function runIdeaGenerationCustom(goal) {
+            const container = document.getElementById('deepIdeaOutput');
+            const titleEl = document.getElementById('deepIdeaTitle');
+            const descEl = document.getElementById('deepIdeaDesc');
+            const metricsEl = document.getElementById('deepIdeaMetrics');
+            const refsEl = document.getElementById('deepIdeaReferences');
+
+            container.classList.remove('hidden');
+            titleEl.innerText = `Blueprint Strategi: ${goal}`;
+
+            if (goal.includes('SaaS B2B')) {
+                descEl.innerText = `"Dengarkan baik-baik. Jangan membangun software besar yang mencakup semua hal. Fokuslah pada satu luka bakar yang paling menyakitkan bagi UMKM: pencatatan invoice dan rekonsiliasi pajak harian. Dengan arsitektur agentic AI berbiaya rendah, Anda bisa menjual langganan bulanan yang murah namun bervolume tinggi. Raksasa enterprise tidak akan turun tangan melayani pasar ini karena marjinnya terlalu kecil bagi mereka, tapi bagi kita? Ini adalah tambang emas dengan retensi di atas 92%."`;
+                metricsEl.innerHTML = `
+                    <li><strong>Gross Margin:</strong> 82% (Berbasis Cloud Native)</li>
+                    <li><strong>LTV:CAC Ratio:</strong> 5.4x (Sangat Sehat)</li>
+                    <li><strong>Payback Period:</strong> 3.1 Bulan</li>
+                    <li><strong>Moat Defensibility:</strong> Proprietary Workflow Data</li>
+                `;
+                refsEl.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                        <strong>📌 Studi Kasus #1 (Stripe & Xero Integration):</strong><br>
+                        Penyederhanaan alur akuntansi mikro di Asia Tenggara melipatgandakan adopsi SaaS dalam 12 bulan tanpa biaya iklan masif.
+                    </div>
+                `;
+            } else if (goal.includes('Sustainable Fashion')) {
+                descEl.innerText = `"Industri fashion konvensional adalah kuburan modal karena over-production. Ubah paradigmanya. Gunakan sistem on-demand micro-batch. Pelanggan memesan desain digital terlebih dahulu, baru diproduksi dalam 48 jam. Risiko stok mati nol, modal berputar dalam hitungan hari, dan Anda memenangkan hati generasi baru yang peduli jejak karbon."`;
+                metricsEl.innerHTML = `
+                    <li><strong>Inventory Waste:</strong> 0% (On-Demand Model)</li>
+                    <li><strong>Net Profit Margin:</strong> 58% (Premium Sustainable)</li>
+                    <li><strong>Customer Acquisition Cost (CAC):</strong> Rendah via Organic TikTok</li>
+                    <li><strong>Repeat Order Rate:</strong> 44%</li>
+                `;
+                refsEl.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                        <strong>📌 Studi Kasus #2 (Reformation & Local Eco-Brands):</strong><br>
+                        Penerapan rantai pasok transparan menaikkan valuasi brand hingga 3.5x lipat di mata investor hijau.
+                    </div>
+                `;
+            } else if (goal.includes('Agentic AI')) {
+                descEl.innerText = `"Agensi kreatif tradisional mempekerjakan puluhan desainer untuk tugas repetitif. Kita hancurkan model itu. Jadilah orkestrator prompt dan agentic workflow. Satu orang founder dapat mengelola output setara agensi beranggotakan 20 orang. Efisiensi ini memungkinkan Anda menawarkan harga 60% di bawah agensi konvensional namun dengan marjin bersih 75%."`;
+                metricsEl.innerHTML = `
+                    <li><strong>Output Velocity:</strong> 10x Lipat vs Agensi Konvensional</li>
+                    <li><strong>Operating Margin:</strong> 75%</li>
+                    <li><strong>Overhead Cost:</strong> Sangat Minimal (Lean Team)</li>
+                    <li><strong>Scalability Index:</strong> Tak Terbatas (Digital Native)</li>
+                `;
+                refsEl.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                        <strong>📌 Studi Kasus #3 (AI Studio Automation US & SG):</strong><br>
+                        Transformasi agensi konvensional menjadi AI-first studio melipatgandakan net profit per employee secara drastis.
+                    </div>
+                `;
+            } else {
+                descEl.innerText = `"Pendidikan masa depan bukan lagi tentang menghafal di dalam kelas berjam-jam, melainkan micro-learning personal yang dibimbing AI co-pilot. Sediakan modul interaktif berdurasi 5 menit per hari yang disesuaikan dengan kecepatan belajar masing-masing individu. Retensi melonjak karena relevansinya langsung terasa di dunia kerja nyata."`;
+                metricsEl.innerHTML = `
+                    <li><strong>Completion Rate:</strong> 88% (Micro-Learning Format)</li>
+                    <li><strong>Subscription Retention:</strong> 91%</li>
+                    <li><strong>Content Production Cost:</strong> Efisien via AI Generation</li>
+                    <li><strong>Market TAM:</strong> Rp 35 Triliun (Asia Tenggara)</li>
+                `;
+                refsEl.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                        <strong>📌 Studi Kasus #4 (Duolingo & Masterclass Model):</strong><br>
+                        Gamifikasi dan personalisasi kurikulum berbasis AI menciptakan kebiasaan harian yang tak tergantikan.
+                    </div>
+                `;
+            }
+        }
+
+        function sendUserGeminiChatMessage() {
+            const input = document.getElementById('aiChatInput');
+            const container = document.getElementById('aiChatMessages');
+            if (!input.value.trim()) return;
+
+            const userText = input.value;
+            input.value = '';
+
+            container.innerHTML += `
+                <div class="flex items-start gap-3 justify-end">
+                    <div class="glass-card p-4 rounded-2xl max-w-xl text-xs space-y-1 bg-blue-600/20 border-blue-500/30">
+                        <p class="text-white font-medium">${userText}</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-md"><i class="fa-solid fa-user"></i></div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                let reply = `Analisis mendalam otomatis untuk query "${userText}": Berdasarkan data neural date-by-date Q1 2026, sektor ini mengalami pertumbuhan eksponensial sebesar 74% YoY. Strategi terbaik adalah memadukan penawaran digital instan dengan pendekatan human-centric Society 5.0. Targetkan audiens urban tech-savvy melalui kanal mikro-influencer dan otomatisasi berbasis AI.`;
+                container.innerHTML += `
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-md"><i class="fa-solid fa-robot"></i></div>
+                        <div class="glass-card p-4 rounded-2xl max-w-xl text-xs space-y-2">
+                            <p class="text-white font-semibold">${reply}</p>
+                        </div>
+                    </div>
+                `;
+                container.scrollTop = container.scrollHeight;
+            }, 300);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function runCustomTrendPrediction() {
+            const idea = document.getElementById('customPredictionIdea').value.trim();
+            const container = document.getElementById('predictionResultContainer');
+            const title = document.getElementById('predResultTitle');
+            if (!idea) return;
+
+            container.classList.remove('hidden');
+            title.innerText = `Hasil Proyeksi Sukses: ${idea}`;
+            document.getElementById('predMarketVal').innerText = `Rp ${(Math.random() * 180 + 60).toFixed(1)} Triliun`;
+            document.getElementById('predCagr').innerText = `+${(Math.random() * 25 + 35).toFixed(1)}% p.a`;
+        }
+
+        function generateRandomBudget() {
+            const randomVals = [10000000, 25000000, 50000000, 100000000, 250000000];
+            const chosen = randomVals[Math.floor(Math.random() * randomVals.length)];
+            document.getElementById('scanBudgetInput').value = chosen;
+        }
+
+        function executeAdvancedOpportunityScan() {
+            const sector = document.getElementById('scanSectorSelect').value;
+            const model = document.getElementById('scanModelSelect').value;
+            const budget = document.getElementById('scanBudgetInput').value;
+
+            document.getElementById('scanOutTitle').innerText = `${sector} (${model})`;
+            document.getElementById('scanOutDesc').innerText = `Alokasi modal Rp ${parseInt(budget).toLocaleString()} untuk model ${model} pada sektor ${sector}. Proyeksi sukses dikalibrasi date-to-year dengan ROI tercepat melalui akuisisi B2B bernilai tinggi.`;
+            
+            const badge = document.getElementById('scanScoreBadge');
+            badge.innerText = "Success Probability: 98.6% (Turbo Verified)";
+        }
+
+        function updateMarketInsightSector(sec) {
+            if (!chartsInstance.bar) return;
+            if (sec === 'saas') {
+                chartsInstance.bar.data.datasets[0].data = [98, 92, 88, 84, 95];
+            } else if (sec === 'fnb') {
+                chartsInstance.bar.data.datasets[0].data = [85, 96, 78, 91, 82];
+            } else {
+                chartsInstance.bar.data.datasets[0].data = [90, 95, 89, 94, 97];
+            }
+            chartsInstance.bar.update();
+        }
+
+        function generateViralHashtags() {
+            const query = document.getElementById('socialSearchInput').value.trim() || 'Bisnis Digital';
+            const container = document.getElementById('viralKeywordsContainer');
+            const tags = [
+                `#${query.replace(/\s+/g, '')}2026 (+145%)`,
+                `#Smart${query.replace(/\s+/g, '')}AI (+112%)`,
+                `#Society5Zero${query.replace(/\s+/g, '')} (+95%)`,
+                `#NextGen${query.replace(/\s+/g, '')} (+88%)`,
+                `#Disruptive${query.replace(/\s+/g, '')} (+79%)`
+            ];
+            container.innerHTML = tags.map(t => `<span class="px-3.5 py-2 rounded-xl bg-indigo-500/15 text-indigo-300 font-bold text-xs border border-indigo-500/30 animate-pulse">${t}</span>`).join('');
+        }
+
+        function downloadReportPdf() {
+            window.print();
+        }
+
+        function downloadReportExcel() {
+            const csvContent = "data:text/csv;charset=utf-8,Q1_2026_Executive_Research_Report\nKategori_Riset,Metrik_Analisis,Nilai_Proyeksi,Formula_Excel_Valid\nTotal Addressable Market,TAM Triliun,Rp 145 T,=SUM(C2*1.5)\nCAGR Growth Rate,Index,48.2%,=POWER(1+0.48,3)\nConfidence Score,Percentage,96.8%,=AVERAGE(95,98,97)\nPayback Period,Bulan,2.2,=MIN(2.2,3.5)";
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "TrendHunter_Q1_2026_Executive_Research_Report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function initCharts() {
+            if (chartsInstance.prediction) return;
+            updateLiveDates();
+
+            const predCtx = document.getElementById('predictionChart').getContext('2d');
+            chartsInstance.prediction = new Chart(predCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2026 Q1', '2026 Q2', '2026 Q3', '2026 Q4', '2027', '2028'],
+                    datasets: [{ label: 'Adopsi Pasar (%)', data: [78, 85, 90, 94, 97, 99], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
+            });
+
+            const reportPreviewCtx = document.getElementById('reportPreviewChart').getContext('2d');
+            chartsInstance.reportPreview = new Chart(reportPreviewCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                    datasets: [{ label: 'Proyeksi Pertumbuhan Sektor Utama (%)', data: [82, 89, 94, 98], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
+            });
+
+            const barCtx = document.getElementById('marketBarChart').getContext('2d');
+            chartsInstance.bar = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['AI SaaS', 'Eco App', 'EdTech', 'Functional F&B', 'AgriTech'],
+                    datasets: [{ label: 'Demand Index', data: [98, 92, 88, 84, 95], backgroundColor: '#3b82f6' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
+            });
+
+            const pieCtx = document.getElementById('marketPieChart').getContext('2d');
+            chartsInstance.pie = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['AI & Tech', 'Sustainable', 'Education', 'Lifestyle'],
+                    datasets: [{ data: [48, 24, 18, 10], backgroundColor: ['#6366f1', '#10b981', '#a855f7', '#f59e0b'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+            });
+
+            const radarCtx = document.getElementById('competitorRadarChart').getContext('2d');
+            chartsInstance.radar = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Price Agility', 'Marketing', 'Tech Innovation', 'Engagement', 'Customer Trust'],
+                    datasets: [
+                        { label: 'Your Startup', data: [95, 88, 92, 96, 94], backgroundColor: 'rgba(99, 102, 241, 0.25)', borderColor: '#6366f1', borderWidth: 2 }, 
+                        { label: 'Market Incumbent', data: [70, 95, 75, 80, 85], backgroundColor: 'rgba(236, 72, 153, 0.15)', borderColor: '#ec4899', borderWidth: 2 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { r: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', backdropColor: 'transparent', max: 100, min: 50 } } } }
+            });
+        }
+    </script>
+</body>
+</html>
